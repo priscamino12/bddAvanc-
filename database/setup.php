@@ -29,6 +29,13 @@ echo "Connexion à '" . DB_NAME . "' OK.\n";
 try {
     $pdo->exec("
         -- Produit : clé primaire manuelle (pas SERIAL)
+        CREATE TABLE IF NOT EXISTS user(
+            id INTEGER PRIMARY KEY,
+            nom VARCHAR(255) NOT NULL,
+            email VARCHAR(255) NOT NULL,
+            password VARCHAR(255) NOT NULL,
+            role VARCHAR(255) NOT NULL
+        );
         CREATE TABLE IF NOT EXISTS produit (
             n_produit INTEGER PRIMARY KEY,
             design VARCHAR(255) NOT NULL,
