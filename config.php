@@ -8,3 +8,4 @@ define('DB_DEFAULT', 'postgres');
 define('DB_NAME', 'stock_audit');     
 
 define('API_BASE_URL', 'http://localhost:8000');
+define('TOKEN_SECRET', 'secret_key_123');

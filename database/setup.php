@@ -28,27 +28,31 @@ echo "Connexion à '" . DB_NAME . "' OK.\n";
 
 try {
     $pdo->exec("
-        -- Produit : clé primaire manuelle (pas SERIAL)
-        CREATE TABLE IF NOT EXISTS user(
-            id INTEGER PRIMARY KEY,
+        -- Users pour connexion et rôles
+        CREATE TABLE IF NOT EXISTS users (
+            id SERIAL PRIMARY KEY,
             nom VARCHAR(255) NOT NULL,
-            email VARCHAR(255) NOT NULL,
+            email VARCHAR(255) NOT NULL UNIQUE,
             password VARCHAR(255) NOT NULL,
-            role VARCHAR(255) NOT NULL
+            role VARCHAR(50) NOT NULL CHECK (role IN ('admin', 'user'))
         );
-        CREATE TABLE IF NOT EXISTS produit (
-            n_produit INTEGER PRIMARY KEY,
+
+        -- Produit
+       CREATE TABLE IF NOT EXISTS produit (
+            id SERIAL PRIMARY KEY,
+            n_produit INTEGER UNIQUE NOT NULL,
             design VARCHAR(255) NOT NULL,
             stock INTEGER DEFAULT 0
         );
 
-        -- Fournisseur : clé primaire manuelle + id auto pour usage interne si besoin
+        -- Fournisseur
         CREATE TABLE IF NOT EXISTS fournisseur (
-            n_frs INTEGER PRIMARY KEY,
+            id SERIAL PRIMARY KEY,
+            n_frs INTEGER UNIQUE NOT NULL,
             nom VARCHAR(255) NOT NULL
         );
 
-        -- Approvisionnement : clé composite
+        -- Approvisionnement
         CREATE TABLE IF NOT EXISTS approvisionnement (
             n_frs INTEGER NOT NULL,
             n_produit INTEGER NOT NULL,
@@ -58,39 +62,45 @@ try {
             FOREIGN KEY (n_produit) REFERENCES produit(n_produit) ON DELETE CASCADE
         );
 
-        -- Audit : id auto
+        -- Audit
         CREATE TABLE IF NOT EXISTS audit_approvisionnement (
             id SERIAL PRIMARY KEY,
             type_action VARCHAR(20) NOT NULL CHECK (type_action IN ('ajout', 'modification', 'suppression')),
             date_mise_a_jour TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            nom VARCHAR(255),
+            nom VARCHAR(255),  -- Nom du fournisseur
             design VARCHAR(255),
             qte_entree_ancien INTEGER,
             qte_entree_nouv INTEGER,
-            utilisateur VARCHAR(100) DEFAULT current_user
+            utilisateur VARCHAR(100)  -- Nom de l'utilisateur app
         );
 
         DROP TRIGGER IF EXISTS trig_approvisionnement ON approvisionnement;
 
         CREATE OR REPLACE FUNCTION update_stock_and_audit()
         RETURNS TRIGGER AS $$
+        DECLARE
+            current_user_name VARCHAR(100) := current_setting('app.current_user', TRUE);
         BEGIN
+            IF current_user_name IS NULL THEN
+                current_user_name = 'inconnu';
+            END IF;
+
             IF (TG_OP = 'INSERT') THEN
                 UPDATE produit SET stock = stock + NEW.qte_entree WHERE n_produit = NEW.n_produit;
-                INSERT INTO audit_approvisionnement (type_action, nom, design, qte_entree_nouv)
-                SELECT 'ajout', f.nom, p.design, NEW.qte_entree
+                INSERT INTO audit_approvisionnement (type_action, nom, design, qte_entree_nouv, utilisateur)
+                SELECT 'ajout', f.nom, p.design, NEW.qte_entree, current_user_name
                 FROM fournisseur f JOIN produit p ON f.n_frs = NEW.n_frs AND p.n_produit = NEW.n_produit;
 
             ELSIF (TG_OP = 'UPDATE') THEN
                 UPDATE produit SET stock = stock + (NEW.qte_entree - OLD.qte_entree) WHERE n_produit = NEW.n_produit;
-                INSERT INTO audit_approvisionnement (type_action, nom, design, qte_entree_ancien, qte_entree_nouv)
-                SELECT 'modification', f.nom, p.design, OLD.qte_entree, NEW.qte_entree
+                INSERT INTO audit_approvisionnement (type_action, nom, design, qte_entree_ancien, qte_entree_nouv, utilisateur)
+                SELECT 'modification', f.nom, p.design, OLD.qte_entree, NEW.qte_entree, current_user_name
                 FROM fournisseur f JOIN produit p ON f.n_frs = NEW.n_frs AND p.n_produit = NEW.n_produit;
 
             ELSIF (TG_OP = 'DELETE') THEN
                 UPDATE produit SET stock = stock - OLD.qte_entree WHERE n_produit = OLD.n_produit;
-                INSERT INTO audit_approvisionnement (type_action, nom, design, qte_entree_ancien)
-                SELECT 'suppression', f.nom, p.design, OLD.qte_entree
+                INSERT INTO audit_approvisionnement (type_action, nom, design, qte_entree_ancien, utilisateur)
+                SELECT 'suppression', f.nom, p.design, OLD.qte_entree, current_user_name
                 FROM fournisseur f JOIN produit p ON f.n_frs = OLD.n_frs AND p.n_produit = OLD.n_produit;
             END IF;
             RETURN NULL;
@@ -103,7 +113,7 @@ try {
     ");
 
     echo "Tables et trigger créés/vérifiés avec succès.\n";
-    echo "Exécute maintenant : php -S localhost:8000 api.php\n";
+    echo "Exécute maintenant database/seed.php pour l'admin, puis php -S localhost:8000 api.php\n";
 
 } catch (PDOException $e) {
     echo "Erreur lors de la création : " . $e->getMessage() . "\n";

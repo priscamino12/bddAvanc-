@@ -2,62 +2,135 @@
 
 require_once __DIR__ . '/utils.php';
 
-function handleApprovisionnements($pdo, $method, $n_frs, $n_produit, $input) {
+function handleApprovisionnements($pdo, $method, $n_frs, $n_produit, $input, $user = null) {
+
+    if (in_array($method, ['POST','PUT','DELETE']) && $user && isset($user['nom'])) {
+        $safe_nom = $pdo->quote($user['nom']);
+        $pdo->exec("SET LOCAL app.current_user = $safe_nom;");
+    }
+
     switch ($method) {
+
         case 'GET':
-            if ($n_frs && $n_produit) {
+
+            if ($n_frs !== null && $n_produit !== null) {
+
                 $stmt = $pdo->prepare("
-                    SELECT * FROM approvisionnement 
+                    SELECT n_frs, n_produit, qte_entree
+                    FROM approvisionnement
                     WHERE n_frs = ? AND n_produit = ?
                 ");
-                $stmt->execute([$n_frs, $n_produit]);
+
+                $stmt->execute([(int)$n_frs, (int)$n_produit]);
+
                 $data = $stmt->fetch(PDO::FETCH_ASSOC);
+
                 $data ? respond($data) : error("Approvisionnement non trouvé", 404);
+
             } else {
-                $stmt = $pdo->query("SELECT * FROM approvisionnement ORDER BY n_frs, n_produit");
+
+                $stmt = $pdo->query("
+                    SELECT n_frs, n_produit, qte_entree
+                    FROM approvisionnement
+                    ORDER BY n_frs, n_produit
+                ");
+
                 respond($stmt->fetchAll(PDO::FETCH_ASSOC));
             }
-            break;
+
+        break;
+
 
         case 'POST':
-            if (empty($input['n_frs']) || empty($input['n_produit']) || !isset($input['qte_entree'])) {
+
+            if (!isset($input['n_frs']) || !isset($input['n_produit']) || !isset($input['qte_entree'])) {
                 error("n_frs, n_produit et qte_entree requis");
             }
+
             $stmt = $pdo->prepare("
-                INSERT INTO approvisionnement (n_frs, n_produit, qte_entree) 
+                INSERT INTO approvisionnement (n_frs, n_produit, qte_entree)
                 VALUES (?, ?, ?)
             ");
+
             try {
-                $stmt->execute([$input['n_frs'], $input['n_produit'], (int)$input['qte_entree']]);
-                respond(['message' => 'Approvisionnement ajouté (trigger actif)'], 201);
+
+                $stmt->execute([
+                    (int)$input['n_frs'],
+                    (int)$input['n_produit'],
+                    (int)$input['qte_entree']
+                ]);
+
+                respond([
+                    'message' => 'Approvisionnement ajouté (trigger actif)'
+                ], 201);
+
             } catch (PDOException $e) {
+
                 error("Erreur insertion : " . $e->getMessage(), 400);
             }
-            break;
+
+        break;
+
 
         case 'PUT':
-            if (!$n_frs || !$n_produit) error("n_frs et n_produit requis pour UPDATE", 400);
-            if (!isset($input['qte_entree'])) error("qte_entree requis pour UPDATE");
+
+            if ($n_frs === null || $n_produit === null) {
+                error("n_frs et n_produit requis dans l'URL");
+            }
+
+            if (!isset($input['qte_entree'])) {
+                error("qte_entree requis pour UPDATE");
+            }
+
             $stmt = $pdo->prepare("
-                UPDATE approvisionnement 
-                SET qte_entree = ? 
+                UPDATE approvisionnement
+                SET qte_entree = ?
                 WHERE n_frs = ? AND n_produit = ?
             ");
-            $stmt->execute([(int)$input['qte_entree'], $n_frs, $n_produit]);
-            if ($stmt->rowCount() === 0) error("Approvisionnement non trouvé", 404);
-            respond(['message' => 'Approvisionnement mis à jour (trigger actif)']);
-            break;
+
+            $stmt->execute([
+                (int)$input['qte_entree'],
+                (int)$n_frs,
+                (int)$n_produit
+            ]);
+
+            if ($stmt->rowCount() === 0) {
+                error("Approvisionnement non trouvé", 404);
+            }
+
+            respond([
+                'message' => 'Approvisionnement mis à jour (trigger actif)'
+            ]);
+
+        break;
+
 
         case 'DELETE':
-            if (!$n_frs || !$n_produit) error("n_frs et n_produit requis pour DELETE", 400);
+
+            if ($n_frs === null || $n_produit === null) {
+                error("n_frs et n_produit requis dans l'URL");
+            }
+
             $stmt = $pdo->prepare("
-                DELETE FROM approvisionnement 
+                DELETE FROM approvisionnement
                 WHERE n_frs = ? AND n_produit = ?
             ");
-            $stmt->execute([$n_frs, $n_produit]);
-            if ($stmt->rowCount() === 0) error("Approvisionnement non trouvé", 404);
-            respond(['message' => 'Approvisionnement supprimé (trigger actif)']);
-            break;
+
+            $stmt->execute([
+                (int)$n_frs,
+                (int)$n_produit
+            ]);
+
+            if ($stmt->rowCount() === 0) {
+                error("Approvisionnement non trouvé", 404);
+            }
+
+            respond([
+                'message' => 'Approvisionnement supprimé (trigger actif)'
+            ]);
+
+        break;
+
 
         default:
             error("Méthode non autorisée sur /approvisionnements", 405);

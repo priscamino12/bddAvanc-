@@ -1,2 +1,2 @@
 <?php
-require_once 'database/api.php';
+require_once 'api.php';

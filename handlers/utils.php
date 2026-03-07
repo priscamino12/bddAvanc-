@@ -9,3 +9,14 @@ function respond($data, $status = 200) {
 function error($message, $status = 400) {
     respond(['error' => $message], $status);
 }
+
+// Valide token simple (base64 id:role)
+function validateToken($token) {
+    if (!$token) return false;
+    $decoded = base64_decode($token);
+    list($id, $role) = explode(':', $decoded) ?: [null, null];
+    if ($id && $role && in_array($role, ['admin', 'user'])) {
+        return ['id' => $id, 'role' => $role];
+    }
+    return false;
+}
