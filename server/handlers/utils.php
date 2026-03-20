@@ -13,10 +13,17 @@ function error($message, $status = 400) {
 // Valide token simple (base64 id:role)
 function validateToken($token) {
     if (!$token) return false;
+
     $decoded = base64_decode($token);
-    list($id, $role) = explode(':', $decoded) ?: [null, null];
-    if ($id && $role && in_array($role, ['admin', 'user'])) {
-        return ['id' => $id, 'role' => $role];
+    $parts = explode(':', $decoded);
+
+    if (count($parts) !== 3) return false;
+
+    list($id, $role, $nom) = $parts;
+
+    if ($id && $role && $nom && in_array($role, ['admin', 'user'])) {
+        return ['id' => $id, 'role' => $role, 'nom' => $nom];
     }
+
     return false;
 }

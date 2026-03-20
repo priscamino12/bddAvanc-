@@ -2,8 +2,6 @@
 
 require_once 'config.php';
 require_once 'database/connection.php';
-
-
 require_once 'handlers/utils.php';
 require_once 'handlers/auth.php';  
 require_once 'handlers/users.php';
@@ -43,8 +41,10 @@ if ($resource !== 'auth' && !$user) {
 
 switch ($resource) {
     case 'auth':
-        if ($subResource === 'login') {
+        if ($id === 'login') {          // ← utilise $id au lieu de $subResource
             handleLogin($pdo, $input);
+        } else {
+            error('Route auth invalide', 404);
         }
         break;
 

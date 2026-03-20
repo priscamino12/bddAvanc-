@@ -1,9 +1,9 @@
 <?php
 
 define('DB_HOST', 'localhost');
-define('DB_PORT', '5432');
+define('DB_PORT', '5433');
 define('DB_USER', 'postgres');
-define('DB_PASSWORD', '120405');         
+define('DB_PASSWORD', '1234');         
 define('DB_DEFAULT', 'postgres');         
 define('DB_NAME', 'stock_audit');     
 

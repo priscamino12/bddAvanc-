@@ -6,9 +6,11 @@ function handleProduits($pdo, $method, $id, $input, $user = null) {
 
     // Log pour débogage (supprime après test)
     error_log("handleProduits | Méthode: $method | ID reçu: " . var_export($id, true));
+
+    // IMPORTANT : correction de la syntaxe PostgreSQL pour la variable de session
     if (in_array($method, ['POST', 'PUT', 'DELETE']) && $user && isset($user['nom'])) {
         $safe_nom = $pdo->quote($user['nom']);
-        $pdo->exec("SET LOCAL app.current_user = $safe_nom;");
+        $pdo->exec("SET LOCAL \"app.current_user\" = $safe_nom;");
     }
 
     switch ($method) {

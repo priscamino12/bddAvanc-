@@ -12,7 +12,7 @@ function handleLogin($pdo, $input) {
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($user && password_verify($input['password'], $user['password'])) {
-        $token = base64_encode($user['id'] . ':' . $user['role']);
+        $token = base64_encode($user['id'] . ':' . $user['role'] . ':' . $user['nom']);
         respond(['message' => 'Connexion réussie', 'token' => $token, 'user' => ['nom' => $user['nom'], 'role' => $user['role']]]);
     } else {
         error('Identifiants invalides', 401);
