@@ -4,9 +4,13 @@ require_once __DIR__ . '/utils.php';
 
 function handleApprovisionnements($pdo, $method, $n_frs, $n_produit, $input, $user = null) {
 
+    // Log pour débogage (supprime après test)
+    error_log("handleApprovisionnements | Méthode: $method | n_frs: " . var_export($n_frs, true) . " | n_produit: " . var_export($n_produit, true));
+
+    // Correction cruciale : guillemets doubles autour du nom de variable avec point
     if (in_array($method, ['POST','PUT','DELETE']) && $user && isset($user['nom'])) {
         $safe_nom = $pdo->quote($user['nom']);
-        $pdo->exec("SET LOCAL app.current_user = $safe_nom;");
+        $pdo->exec("SET LOCAL \"app.current_user\" = $safe_nom;");
     }
 
     switch ($method) {

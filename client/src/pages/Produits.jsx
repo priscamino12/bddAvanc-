@@ -4,9 +4,9 @@ import { AuthContext } from '../context/AuthContext';
 import { getProduits, createProduit, updateProduit, deleteProduit } from '../services/api';
 import Sidebar from '../components/Sidebar';
 import Header from '../components/Header'; // ← utilise la version premium qu’on a faite avant
-import { 
-  PlusIcon,CubeIcon, PencilIcon, TrashIcon, ExclamationTriangleIcon, 
-  CheckCircleIcon, XMarkIcon 
+import {
+  PlusIcon, CubeIcon, PencilIcon, TrashIcon, ExclamationTriangleIcon,
+  CheckCircleIcon, XMarkIcon
 } from '@heroicons/react/24/outline';
 
 const Produits = () => {
@@ -19,6 +19,8 @@ const Produits = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [formErrors, setFormErrors] = useState({});
   const [submitLoading, setSubmitLoading] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState(null);
 
   useEffect(() => {
     fetchProduits();
@@ -86,15 +88,22 @@ const Produits = () => {
     setModalOpen(true);
     setFormErrors({});
   };
+  const confirmDelete = async () => {
+    if (!productToDelete) return;
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Voulez-vous vraiment supprimer ce produit ?')) return;
     try {
-      await deleteProduit(id);
+      await deleteProduit(productToDelete.id);
       fetchProduits();
+      setDeleteModalOpen(false);
+      setProductToDelete(null);
     } catch (err) {
       setError('Erreur lors de la suppression');
     }
+  };
+
+  const handleDelete = (produit) => {
+    setProductToDelete(produit);
+    setDeleteModalOpen(true);
   };
 
   const openAddModal = () => {
@@ -178,13 +187,12 @@ const Produits = () => {
                             N° {produit.n_produit}
                           </p>
                         </div>
-                        <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          produit.stock > 10 
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300' 
-                            : produit.stock > 0 
-                              ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300'
-                              : 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300'
-                        }`}>
+                        <div className={`px-3 py-1 rounded-full text-sm font-medium ${produit.stock > 10
+                          ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300'
+                          : produit.stock > 0
+                            ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300'
+                            : 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300'
+                          }`}>
                           {produit.stock} en stock
                         </div>
                       </div>
@@ -200,12 +208,13 @@ const Produits = () => {
                         <PencilIcon className="h-5 w-5" />
                       </button>
                       <button
-                        onClick={() => handleDelete(produit.id)}
+                        onClick={() => handleDelete(produit)}
                         className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
                         title="Supprimer"
                       >
                         <TrashIcon className="h-5 w-5" />
                       </button>
+
                     </div>
                   </div>
                 ))}
@@ -241,9 +250,8 @@ const Produits = () => {
                   value={form.n_produit}
                   onChange={(e) => setForm({ ...form, n_produit: e.target.value })}
                   disabled={editingId} // On ne modifie pas le numéro en édition
-                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
-                    formErrors.n_produit ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                  }`}
+                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all dark:bg-gray-700 dark:border-gray-600 dark:text-white ${formErrors.n_produit ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                    }`}
                   placeholder="Ex: 1001"
                   required
                 />
@@ -260,9 +268,8 @@ const Produits = () => {
                   type="text"
                   value={form.design}
                   onChange={(e) => setForm({ ...form, design: e.target.value })}
-                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
-                    formErrors.design ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                  }`}
+                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all dark:bg-gray-700 dark:border-gray-600 dark:text-white ${formErrors.design ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                    }`}
                   placeholder="Nom du produit"
                   required
                 />
@@ -280,9 +287,8 @@ const Produits = () => {
                   value={form.stock}
                   onChange={(e) => setForm({ ...form, stock: e.target.value })}
                   min="0"
-                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all dark:bg-gray-700 dark:border-gray-600 dark:text-white ${
-                    formErrors.stock ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
-                  }`}
+                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all dark:bg-gray-700 dark:border-gray-600 dark:text-white ${formErrors.stock ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                    }`}
                   placeholder="Quantité en stock"
                 />
                 {formErrors.stock && (
@@ -295,8 +301,8 @@ const Produits = () => {
                   type="submit"
                   disabled={submitLoading}
                   className={`flex-1 py-3 px-6 rounded-xl text-white font-medium transition-all flex items-center justify-center gap-2 shadow-md
-                    ${submitLoading 
-                      ? 'bg-indigo-400 cursor-not-allowed' 
+                    ${submitLoading
+                      ? 'bg-indigo-400 cursor-not-allowed'
                       : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 hover:shadow-lg active:scale-[0.98]'
                     }`}
                 >
@@ -322,6 +328,56 @@ const Produits = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {deleteModalOpen && productToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden transform transition-all scale-100">
+            {/* En-tête */}
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center gap-4">
+              <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-full">
+                <ExclamationTriangleIcon className="h-8 w-8 text-red-600 dark:text-red-400" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+                Confirmer la suppression
+              </h3>
+            </div>
+
+            {/* Corps */}
+            <div className="p-6">
+              <p className="text-gray-700 dark:text-gray-300 mb-2">
+                Voulez-vous vraiment supprimer ce produit ?
+              </p>
+              <p className="font-medium text-gray-900 dark:text-white">
+                {productToDelete.design} (N° {productToDelete.n_produit})
+              </p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
+                Cette action est irréversible.
+              </p>
+            </div>
+
+            {/* Boutons */}
+            <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 flex justify-end gap-4 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => {
+                  setDeleteModalOpen(false);
+                  setProductToDelete(null);
+                }}
+                className="px-5 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                Annuler
+              </button>
+
+              <button
+                onClick={confirmDelete}
+                className="px-5 py-2.5 rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium shadow-md transition-all flex items-center gap-2 active:scale-[0.98]"
+              >
+                <TrashIcon className="h-5 w-5" />
+                Supprimer
+              </button>
+            </div>
           </div>
         </div>
       )}
