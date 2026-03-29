@@ -4,15 +4,23 @@ require_once __DIR__ . '/utils.php';
 
 function handleApprovisionnements($pdo, $method, $n_frs, $n_produit, $input, $user = null) {
 
-    // Log pour débogage (supprime après test)
-    error_log("handleApprovisionnements | Méthode: $method | n_frs: " . var_export($n_frs, true) . " | n_produit: " . var_export($n_produit, true));
+    // ================= USER =================
+    $user_name = 'inconnu';
 
-    // Correction cruciale : guillemets doubles autour du nom de variable avec point
-    if (in_array($method, ['POST','PUT','DELETE']) && $user && isset($user['nom'])) {
-        $safe_nom = $pdo->quote($user['nom']);
-        $pdo->exec("SET LOCAL \"app.current_user\" = $safe_nom;");
+    if ($user && !empty($user['nom'])) {
+        $user_name = $user['nom'];
+        error_log("[AUDIT] Utilisateur détecté : " . $user_name);
+    } else {
+        error_log("[AUDIT] Aucun utilisateur → inconnu");
     }
 
+    // 🔥 Injecter UNIQUEMENT pour actions
+    if (in_array($method, ['POST', 'PUT', 'DELETE'])) {
+        $stmtUser = $pdo->prepare("SELECT set_config('app.current_user', ?, false)");
+        $stmtUser->execute([$user_name]);
+    }
+
+    // ================= ROUTES =================
     switch ($method) {
 
         case 'GET':
@@ -47,7 +55,7 @@ function handleApprovisionnements($pdo, $method, $n_frs, $n_produit, $input, $us
 
         case 'POST':
 
-            if (!isset($input['n_frs']) || !isset($input['n_produit']) || !isset($input['qte_entree'])) {
+            if (!isset($input['n_frs'], $input['n_produit'], $input['qte_entree'])) {
                 error("n_frs, n_produit et qte_entree requis");
             }
 
@@ -57,19 +65,15 @@ function handleApprovisionnements($pdo, $method, $n_frs, $n_produit, $input, $us
             ");
 
             try {
-
                 $stmt->execute([
                     (int)$input['n_frs'],
                     (int)$input['n_produit'],
                     (int)$input['qte_entree']
                 ]);
 
-                respond([
-                    'message' => 'Approvisionnement ajouté (trigger actif)'
-                ], 201);
+                respond(['message' => 'Approvisionnement ajouté'], 201);
 
             } catch (PDOException $e) {
-
                 error("Erreur insertion : " . $e->getMessage(), 400);
             }
 
@@ -102,9 +106,7 @@ function handleApprovisionnements($pdo, $method, $n_frs, $n_produit, $input, $us
                 error("Approvisionnement non trouvé", 404);
             }
 
-            respond([
-                'message' => 'Approvisionnement mis à jour (trigger actif)'
-            ]);
+            respond(['message' => 'Approvisionnement mis à jour']);
 
         break;
 
@@ -129,9 +131,7 @@ function handleApprovisionnements($pdo, $method, $n_frs, $n_produit, $input, $us
                 error("Approvisionnement non trouvé", 404);
             }
 
-            respond([
-                'message' => 'Approvisionnement supprimé (trigger actif)'
-            ]);
+            respond(['message' => 'Approvisionnement supprimé']);
 
         break;
 

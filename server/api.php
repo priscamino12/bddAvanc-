@@ -31,9 +31,22 @@ $input = json_decode(file_get_contents('php://input'), true) ?? [];
 
 $pdo = getAppPdo();
 
-$authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
-$token = str_replace('Bearer ', '', $authHeader);
+$headers = getallheaders();
+
+$authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? '';
+
+$token = '';
+
+if (preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
+    $token = $matches[1];
+}
+
 $user = validateToken($token);
+
+// 🔥 DEBUG
+error_log("AUTH HEADER: " . $authHeader);
+error_log("TOKEN: " . $token);
+error_log("USER: " . json_encode($user));
 
 if ($resource !== 'auth' && !$user) {
     error('Authentification requise', 401);
@@ -41,7 +54,7 @@ if ($resource !== 'auth' && !$user) {
 
 switch ($resource) {
     case 'auth':
-        if ($id === 'login') {          // ← utilise $id au lieu de $subResource
+        if ($id === 'login') {
             handleLogin($pdo, $input);
         } else {
             error('Route auth invalide', 404);
