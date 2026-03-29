@@ -20,6 +20,23 @@ const Audits = () => {
   useEffect(() => {
     fetchAudits();
   }, []);
+  const deleteAudits = async () => {
+    if (!window.confirm("Supprimer tous les audits ?")) return;
+
+    try {
+      await fetch("http://localhost:8000/audits", {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      fetchAudits(); // reload
+    } catch (err) {
+      console.error(err);
+      alert("Erreur suppression");
+    }
+  };
 
   const fetchAudits = async () => {
     try {
@@ -130,6 +147,9 @@ const Audits = () => {
                         <th className="px-6 py-3 text-left text-xs font-semibold">
                           Date
                         </th>
+                        <th className="px-6 py-3 text-left text-xs font-semibold">
+                          Utilisateur
+                        </th>
                       </tr>
                     </thead>
 
@@ -150,19 +170,30 @@ const Audits = () => {
                           </td>
 
                           <td className="px-6 py-4">
-                            {audit.n_frs}
+                            {audit.nom_fournisseur || audit.nom || '-'}
                           </td>
 
                           <td className="px-6 py-4">
-                            {audit.n_produit}
+                            {audit.design}
                           </td>
 
                           <td className="px-6 py-4">
-                            {audit.qte}
+                            {audit.qte_entree_nouv}
                           </td>
 
                           <td className="px-6 py-4 text-sm text-gray-500">
                             {new Date(audit.date_mise_a_jour).toLocaleString()}
+                          </td>
+
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2">
+                              <div className="w-7 h-7 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center text-xs font-medium">
+                                {audit.utilisateur ? audit.utilisateur.charAt(0).toUpperCase() : '?'}
+                              </div>
+                              <span className="font-medium text-gray-900 dark:text-white">
+                                {audit.utilisateur || 'Inconnu'}
+                              </span>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -180,6 +211,12 @@ const Audits = () => {
               >
                 <ArrowPathIcon className="h-5 w-5" />
                 Rafraîchir
+              </button>
+              <button
+                onClick={deleteAudits}
+                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+              >
+                Supprimer tout
               </button>
             </div>
 

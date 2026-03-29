@@ -12,7 +12,6 @@ import Audits from './pages/Audits';
 const PrivateRoute = ({ children, adminOnly = false }) => {
   const { user, loading } = useContext(AuthContext);
 
-  // Pendant le chargement initial → on affiche un loader
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
@@ -31,7 +30,6 @@ const PrivateRoute = ({ children, adminOnly = false }) => {
     return <Navigate to="/dashboard" replace />;
   }
 
-  // OK → affiche la page
   return children;
 };
 
@@ -40,10 +38,7 @@ function App() {
     <AuthProvider>
       <Router>
         <Routes>
-          {/* Page publique */}
           <Route path="/login" element={<Login />} />
-
-          {/* Routes protégées */}
           <Route path="/dashboard" element={
             <PrivateRoute>
               <Dashboard />
@@ -73,8 +68,6 @@ function App() {
               <Audits />
             </PrivateRoute>
           } />
-
-          {/* Redirection par défaut */}
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>

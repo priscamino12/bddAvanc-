@@ -1,10 +1,9 @@
-// components/Sidebar.jsx
-import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   ChartBarIcon, CubeIcon, TruckIcon, ArchiveBoxArrowDownIcon, 
   DocumentTextIcon, ChevronLeftIcon, ChevronRightIcon 
 } from '@heroicons/react/24/outline';
+import { useState } from 'react';
 
 const navItems = [
   { path: '/dashboard', label: 'Dashboard', icon: ChartBarIcon },
@@ -13,8 +12,10 @@ const navItems = [
   { path: '/approvisionnements', label: 'Approvisionnements', icon: ArchiveBoxArrowDownIcon },
   { path: '/audits', label: 'Audits', icon: DocumentTextIcon, adminOnly: true },
 ];
-
-const Sidebar = ({ user }) => {
+type SidebarProps = {
+  user: any;
+};
+const Sidebar = ({ user }: SidebarProps) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const location = useLocation();
 
